@@ -1,2 +1,2 @@
-# gost
+# gobar
 Learning GO with shellz
