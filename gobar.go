@@ -17,26 +17,31 @@ func defaultPrompt() ui.PromptSegment {
 	return ui.PromptSegment{"gobar", "black", "white"}
 }
 
+func registerCommands() {
+}
+
 func main() {
 	iniflags.Parse()
 	// Shared with commands
 	uiSegments = append(uiSegments, defaultPrompt())
 
+	ui.BootstrapCommands()
 	for {
 		input := ui.GetUserInput(uiSegments, ui.TabComplete)
 		if input == "exit" || input == "quit" {
 			break
 		}
 		fmt.Println("")
-		output, err := ui.ProcessInput(input, &uiSegments)
+		output, err := ui.ProcessInput(input)
 
 		if err != nil {
-			fmt.Println("[E]", err)
-		}
-		if len(output.Output) > 0 {
-			fmt.Println(output.Output)
+			ui.Error(fmt.Sprintf("%v", err), uiSegments)
+		} else if len(output.Output) > 0 {
+			ui.Output(output.Output, uiSegments)
 		}
 	}
 
 	ui.Exit()
 }
+
+////// COMMANDS \\\\\\\

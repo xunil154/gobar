@@ -9,11 +9,23 @@ import (
 	"strings"
 )
 
+/*
+	Holds each segment on the CLI, e.g. [ 10.12.90.12 ][ gobar ]
+*/
 type PromptSegment struct {
 	Text    string
 	Fgcolor string
 	Bgcolor string
 }
+
+/*
+	Internal representation for the current state of the command line.
+	input: 		Holds user input (printable characters)
+	escape: 	the current escape sequence
+	cursor: 	Index of the current cursor
+	tabCont: 	How many times we've hit Tab (mod 2)
+
+*/
 
 type commandLine struct {
 	input    string
@@ -34,6 +46,7 @@ const (
 	DOWN  = ESCSEQ + "\x42"
 	RIGHT = ESCSEQ + "\x43"
 	LEFT  = ESCSEQ + "\x44"
+	EOT   = "\x04"
 
 	PRINTABLE = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890~`!@#$%^&*()_-+='\"{}[]\\|:;<>,. "
 )
@@ -58,7 +71,57 @@ var (
 	bgwhite = color.New(color.BgWhite).SprintFunc()
 
 	prepared = false
+	history  = make([]string, 0, 100)
+
+	override_colors = false
+	override_fg     = ""
+	override_bg     = ""
 )
+
+// Exported Functions
+
+func DisplayPrompt(segments []PromptSegment) {
+	for i, segment := range segments {
+		fmt.Print(renderSegment(segment, i+1 == len(segments)))
+	}
+	color.Unset()
+	fmt.Print(" ")
+}
+
+func GetUserInput(segments []PromptSegment, tabComplete func(string, int) string) string {
+	if !prepared {
+		prepareKeyboard()
+	}
+	DisplayPrompt(segments)
+	//reader := bufio.NewReader(os.Stdin)
+	//text, _ := reader.ReadString('\n')
+	text := getInput(segments, tabComplete)
+	text = strings.TrimSpace(text)
+	return text
+}
+
+func Exit() {
+	fmt.Println("") // newline to not mess up terminal
+	resetKeyboard()
+}
+
+func Error(message string, uiSegments []PromptSegment) {
+	override_colors = true
+	override_fg = "black"
+	override_bg = "red"
+	DisplayPrompt(uiSegments)
+	override_colors = false
+
+	fmt.Println(message)
+}
+
+func Output(message string, uiSegments []PromptSegment) {
+	override_colors = false
+	DisplayPrompt(uiSegments)
+	fmt.Println(message)
+}
+
+// Color functions
 
 func (segment *PromptSegment) String() string {
 	return segment.Text + " fg: " + segment.Fgcolor + " bg: " + segment.Bgcolor
@@ -94,23 +157,23 @@ func colorize(text string, fg string, bg string) string {
 	return colorized
 }
 
+// Render and display functions
+
 func renderSegment(segment PromptSegment, end bool) string {
 	text := segment.Text
+	fg := segment.Fgcolor
+	bg := segment.Bgcolor
+	if override_colors {
+		fg = override_fg
+		bg = override_bg
+	}
 	if end {
-		text = colorize(text+" ", segment.Fgcolor, segment.Bgcolor)
-		text += colorize(*prompt_end, segment.Bgcolor, segment.Fgcolor)
+		text = colorize(text+" ", fg, bg)
+		text += colorize(*prompt_end, bg, fg)
 	} else {
-		text = colorize(text+*prompt_mid, segment.Fgcolor, segment.Bgcolor)
+		text = colorize(text+*prompt_mid, fg, bg)
 	}
 	return text
-}
-
-func DisplayPrompt(segments []PromptSegment) {
-	for i, segment := range segments {
-		fmt.Print(renderSegment(segment, i+1 == len(segments)))
-	}
-	color.Unset()
-	fmt.Print(" ")
 }
 
 func drawLine(line commandLine, prompts []PromptSegment) {
@@ -134,9 +197,25 @@ func redrawLine(line commandLine, prompts []PromptSegment) {
 	drawLine(line, prompts)
 }
 
-func prepareKeyboard() {
-	exec.Command("stty", "-F", "/dev/tty", "cbreak", "min", "1", "-echo").Run()
-	prepared = true
+// Input processing functions
+
+func getInput(prompts []PromptSegment, tabComplete func(string, int) string) string {
+	line := commandLine{"", "", 0, 0}
+
+	for {
+		// read a single byte
+		buf := make([]byte, 1)
+		os.Stdin.Read(buf)
+
+		// process the single byte
+		finished := line.handleInput(buf[0], tabComplete)
+		redrawLine(line, prompts)
+		if finished {
+			break
+		}
+	}
+
+	return line.input
 }
 
 // Returns -1 if no escape sequence found
@@ -144,6 +223,7 @@ func hasEscape(input string) int {
 	return strings.Index(input, ESCSEQ)
 }
 
+// Returns the found escape sequence, empty string if none found
 func getEscape(input string) string {
 	index := hasEscape(input)
 	if index != -1 {
@@ -159,6 +239,7 @@ func getEscape(input string) string {
 	return ""
 }
 
+// Process escape sequences
 func (line *commandLine) handleEscape(escape string) {
 	switch escape {
 	case LEFT:
@@ -173,25 +254,14 @@ func (line *commandLine) handleEscape(escape string) {
 		if line.cursor < len(line.input) {
 			line.input = deleteChar(line.input, line.cursor)
 		}
+	case HOME:
+		line.cursor = 0
+	case END:
+		line.cursor = len(line.input)
 	}
 }
 
-func deleteChar(input string, index int) string {
-	return input[:index] + input[index+1:]
-}
-func insertChar(input string, index int, char byte) string {
-	if len(input) == 0 {
-		return byteToString(char)
-	}
-	return (input[:index] + byteToString(char) + input[index:])
-}
-
-func byteToString(b byte) string {
-	buf := make([]byte, 1)
-	buf[0] = b
-	return string(buf)
-}
-
+// Process input after an ESC character is found
 func (line *commandLine) handleEscapeInput(input byte) {
 
 	char := byteToString(input)
@@ -207,6 +277,7 @@ func (line *commandLine) handleEscapeInput(input byte) {
 	}
 }
 
+// Special characters such as tabs, backspaces etc
 func (line *commandLine) handleSpecialInput(input byte, tabComplete func(string, int) string) {
 
 	switch input {
@@ -218,11 +289,18 @@ func (line *commandLine) handleSpecialInput(input byte, tabComplete func(string,
 	case 0x09: // \t
 		line.input = tabComplete(line.input, line.tabCount)
 		line.tabCount = (line.tabCount + 1) % 2
+	case 0x0c: // Ctrl + l
+		clearScreen()
+	case 0x04: // Ctrl + d
+		line.input = ""
+		line.cursor = 0
 	}
 }
 
 // Returns true when line is complete
 func (line *commandLine) handleInput(input byte, tabComplete func(string, int) string) bool {
+
+	//debug("Key: %v", input)
 
 	char := byteToString(input)
 
@@ -249,39 +327,44 @@ func (line *commandLine) handleInput(input byte, tabComplete func(string, int) s
 	return false
 }
 
-func getInput(prompts []PromptSegment, tabComplete func(string, int) string) string {
-	line := commandLine{"", "", 0, 0}
+// Utility functions
 
-	for {
-		// read a single byte
-		buf := make([]byte, 1)
-		os.Stdin.Read(buf)
-
-		// process the single byte
-		finished := line.handleInput(buf[0], tabComplete)
-		redrawLine(line, prompts)
-		if finished {
-			break
-		}
-	}
-
-	return line.input
+// Convert a byte to a string type
+func byteToString(b byte) string {
+	buf := make([]byte, 1)
+	buf[0] = b
+	return string(buf)
 }
 
-func GetUserInput(segments []PromptSegment, tabComplete func(string, int) string) string {
-	if !prepared {
-		prepareKeyboard()
-	}
-	DisplayPrompt(segments)
-	//reader := bufio.NewReader(os.Stdin)
-	//text, _ := reader.ReadString('\n')
-	text := getInput(segments, tabComplete)
-	text = strings.TrimSpace(text)
-	return text
+// Delete a character from a string at a given index
+func deleteChar(input string, index int) string {
+	return input[:index] + input[index+1:]
 }
 
-func Exit() {
-	fmt.Println("") // newline to not mess up terminal
-	info("Fixing terminal")
+// Insert a character into a string at a given index
+func insertChar(input string, index int, char byte) string {
+	if len(input) == 0 {
+		return byteToString(char)
+	}
+	return (input[:index] + byteToString(char) + input[index:])
+}
+
+// TTY functions
+
+// Disables echo, disables newline buffering
+func prepareKeyboard() {
+	exec.Command("stty", "-F", "/dev/tty", "cbreak", "min", "1", "-echo").Run()
+	prepared = true
+}
+
+// Enables echo and sane settings
+func resetKeyboard() {
 	exec.Command("stty", "-F", "/dev/tty", "icanon", "sane").Run()
+}
+
+// Clear the screen, reposition to top of screen
+func clearScreen() {
+	// https://stackoverflow.com/questions/10105666/clearing-the-terminal-screen#15559322
+	fmt.Print(ESCSEQ + "2J" + END)
+	fmt.Print(ESCSEQ + "H" + END)
 }
