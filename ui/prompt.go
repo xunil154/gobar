@@ -395,7 +395,6 @@ func clearScreen() {
 ///// History Methods \\\\\
 
 func (hist *history) isFull() bool {
-	debug("Full? %d == %d", len(hist.commandHistory), cap(hist.commandHistory))
 	return len(hist.commandHistory) == cap(hist.commandHistory)
 }
 
