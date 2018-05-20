@@ -34,6 +34,11 @@ type commandLine struct {
 	tabCount int
 }
 
+type history struct {
+	commandHistory []string
+	index          int
+}
+
 const (
 	ESC    = "\x1b"
 	ESCSEQ = ESC + "\x5b"
@@ -49,6 +54,8 @@ const (
 	EOT   = "\x04"
 
 	PRINTABLE = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890~`!@#$%^&*()_-+='\"{}[]\\|:;<>,. "
+
+	historySize = 100
 )
 
 var (
@@ -70,8 +77,9 @@ var (
 	bgblack = color.New(color.BgBlack).SprintFunc()
 	bgwhite = color.New(color.BgWhite).SprintFunc()
 
-	prepared = false
-	history  = make([]string, 0, 100)
+	prepared       = false
+	commandHistory = newHistory(historySize)
+	historyIndex   = 0
 
 	override_colors = false
 	override_fg     = ""
@@ -215,6 +223,9 @@ func getInput(prompts []PromptSegment, tabComplete func(string, int) string) str
 		}
 	}
 
+	if len(line.input) != 0 {
+		commandHistory.push(line.input)
+	}
 	return line.input
 }
 
@@ -258,6 +269,16 @@ func (line *commandLine) handleEscape(escape string) {
 		line.cursor = 0
 	case END:
 		line.cursor = len(line.input)
+	case UP:
+		prev := commandHistory.previous()
+		if prev != "" {
+			line.input = prev
+		}
+		line.cursor = len(line.input)
+	case DOWN:
+		next := commandHistory.next()
+		line.input = next
+		line.cursor = len(line.input)
 	}
 }
 
@@ -291,6 +312,8 @@ func (line *commandLine) handleSpecialInput(input byte, tabComplete func(string,
 		line.tabCount = (line.tabCount + 1) % 2
 	case 0x0c: // Ctrl + l
 		clearScreen()
+	case 0x12: // Ctrl + r
+		//clearScreen()
 	case 0x04: // Ctrl + d
 		line.input = ""
 		line.cursor = 0
@@ -367,4 +390,92 @@ func clearScreen() {
 	// https://stackoverflow.com/questions/10105666/clearing-the-terminal-screen#15559322
 	fmt.Print(ESCSEQ + "2J" + END)
 	fmt.Print(ESCSEQ + "H" + END)
+}
+
+///// History Methods \\\\\
+
+func (hist *history) isFull() bool {
+	debug("Full? %d == %d", len(hist.commandHistory), cap(hist.commandHistory))
+	return len(hist.commandHistory) == cap(hist.commandHistory)
+}
+
+// Push to history, returns index of last pushed item
+func (hist *history) push(command string) int {
+	// If we reused a history item
+	if hist.index < len(hist.commandHistory) {
+		hist.reuse(hist.index)
+		hist.index = len(hist.commandHistory)
+		return hist.index
+	}
+
+	if hist.isFull() {
+		// Create new slice
+		new := make([]string, 0, cap(hist.commandHistory))
+		// Copy history into it TODO: more efficent way?
+		new = append(new, hist.commandHistory[1:]...)
+
+		hist.commandHistory = append(new, command)
+	} else {
+		hist.commandHistory = append(hist.commandHistory, command)
+	}
+	hist.index = len(hist.commandHistory)
+	return len(hist.commandHistory) - 1
+}
+
+// Moves a history item at 'index' to the end
+func (hist *history) reuse(index int) int {
+	if index >= len(hist.commandHistory) {
+		return -1
+	}
+	command := hist.commandHistory[index]
+	new := make([]string, 0, cap(hist.commandHistory))
+	new = append(new, hist.commandHistory[:index]...)
+	new = append(new, hist.commandHistory[index+1:]...)
+	new = append(new, command)
+	hist.commandHistory = new
+	return len(hist.commandHistory) - 1
+}
+
+/*
+Return the next history item
+*/
+func (hist *history) next() (next string) {
+	if hist.index+1 < len(hist.commandHistory) {
+		hist.index += 1
+		if hist.index >= len(hist.commandHistory) {
+			hist.index = len(hist.commandHistory) // always point to one beyond
+			next = ""
+		} else {
+			next = hist.commandHistory[hist.index]
+		}
+	}
+	return next
+}
+
+/*
+Return the previous history item
+*/
+func (hist *history) previous() (prev string) {
+
+	hist.index -= 1
+	if hist.index < 0 {
+		hist.index = 0
+	}
+
+	if hist.index < len(hist.commandHistory) {
+		prev = hist.commandHistory[hist.index]
+	}
+	return prev
+}
+
+func newHistory(capacity int) history {
+	return history{
+		make([]string, 0, capacity),
+		0,
+	}
+}
+
+// Returns -1 if no match found, otherwise the index of the first occurance
+func searchHistory(partial string, start int) int {
+	return -1
 }

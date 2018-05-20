@@ -16,8 +16,8 @@ type command struct {
 }
 
 func (cmd command) String() string {
-	return fmt.Sprintf("Command %v: %v - %v (%v)(%v)",
-		cmd.name, cmd.description, cmd.help, cmd.callback, cmd.tabComplete)
+	return fmt.Sprintf("Command %v: %v - %v",
+		cmd.name, cmd.description, cmd.help)
 }
 
 type CommandOutput struct {
