@@ -8,14 +8,14 @@ var (
 	DEBUG = true
 )
 
-func warning(s string) {
-	fmt.Println(colorize("[!]", "yellow", "black"), s)
+func warning(format string, args ...interface{}) {
+	fmt.Println(fmt.Sprintf(colorize("[!]", "yellow", "black")+format, args...))
 }
-func info(s string) {
-	fmt.Println(colorize("[I]", "blue", "black"), s)
+func info(format string, args ...interface{}) {
+	fmt.Println(fmt.Sprintf(colorize("[I]", "blue", "black")+format, args...))
 }
-func debug(s string) {
+func debug(format string, args ...interface{}) {
 	if DEBUG {
-		fmt.Println(colorize("[D]", "green", "black"), s)
+		fmt.Println(fmt.Sprintf(colorize("[D]", "green", "black")+format, args...))
 	}
 }

@@ -37,4 +37,6 @@ func main() {
 			fmt.Println(output.Output)
 		}
 	}
+
+	ui.Exit()
 }

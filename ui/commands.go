@@ -3,6 +3,7 @@ package ui
 import (
 	"errors"
 	"fmt"
+	"os/exec"
 	"strings"
 	"time"
 )
@@ -69,6 +70,8 @@ func initCommands() {
 }
 
 func exit(command string, uiSegments *[]PromptSegment) (string, error) {
+	// Do nothing really, handeled in gobar.go
+	// TODO: Make this cleaner
 	return "", errors.New("exit")
 }
 

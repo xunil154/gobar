@@ -135,8 +135,7 @@ func redrawLine(line commandLine, prompts []PromptSegment) {
 }
 
 func prepareKeyboard() {
-	exec.Command("stty", "-F", "/dev/tty", "cbreak", "min", "1").Run()
-	exec.Command("stty", "-F", "/dev/tty", "-echo").Run()
+	exec.Command("stty", "-F", "/dev/tty", "cbreak", "min", "1", "-echo").Run()
 	prepared = true
 }
 
@@ -279,4 +278,10 @@ func GetUserInput(segments []PromptSegment, tabComplete func(string, int) string
 	text := getInput(segments, tabComplete)
 	text = strings.TrimSpace(text)
 	return text
+}
+
+func Exit() {
+	fmt.Println("") // newline to not mess up terminal
+	info("Fixing terminal")
+	exec.Command("stty", "-F", "/dev/tty", "icanon", "sane").Run()
 }
