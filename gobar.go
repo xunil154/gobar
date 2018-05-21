@@ -6,6 +6,8 @@ import (
 	"github.com/xunil154/gobar/ui"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
 var (
@@ -21,6 +23,8 @@ func registerCommands() {
 }
 
 func main() {
+	signal.Ignore(syscall.SIGINT, syscall.SIGTERM)
+
 	iniflags.Parse()
 	// Shared with commands
 	uiSegments = append(uiSegments, defaultPrompt())
