@@ -66,7 +66,6 @@ func TestHistoryPush(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		debug("Test pushing: '%v'", c.command)
 		got := hist.push(c.command)
 		if got != c.expected_index {
 			t.Errorf("history.push(%q) == %q, want %q",
@@ -81,6 +80,41 @@ func TestHistoryPush(t *testing.T) {
 		}
 		if cap(hist.commandHistory) != 5 {
 			t.Errorf("history.commandHistory did not maintain max capacity")
+		}
+	}
+}
+
+func TestLineHandleInput(t *testing.T) {
+	line := newLine()
+	tc := func(partial string, count int) string { return "" }
+
+	//finished := line.handleInput(buf[0], tabComplete)
+	cases := []struct {
+		char     byte
+		expected string
+		finished bool
+	}{
+		{'A', "A", false},
+		{'B', "AB", false},
+		{'C', "ABC", false},
+		{'!', "ABC!", false},
+		{' ', "ABC! ", false},
+		{0x7f, "ABC!", false}, // backspace
+		{0x04, "", false},     // Ctrl + D
+		{'A', "A", false},
+		{'\n', "A", true},
+	}
+
+	for _, c := range cases {
+		got := line.handleInput(c.char, tc)
+
+		if got != c.finished {
+			t.Errorf("commandLine.handleInput(%q, tc) == %v, want %v",
+				c.char, got, c.finished)
+		}
+		if line.input != c.expected {
+			t.Errorf("commandLine.handleInput.input = %q, want %q",
+				line.input, c.expected)
 		}
 	}
 }

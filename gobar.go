@@ -14,7 +14,7 @@ var (
 )
 
 func defaultPrompt() ui.PromptSegment {
-	return ui.PromptSegment{"gobar", "black", "white"}
+	return ui.NewPromptSegment("gobar", "black", "white")
 }
 
 func registerCommands() {
