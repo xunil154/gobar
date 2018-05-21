@@ -1,6 +1,8 @@
 # [GOBar](http://lmgtfy.com/?q=gobar)
 
-Master: [![Build Status](https://travis-ci.org/xunil154/gobar.svg?branch=master)](https://travis-ci.org/xunil154/gobar)
+Branch | Build Status |
+-------|--------------|
+Master | [![Build Status](https://travis-ci.org/xunil154/gobar.svg?branch=master)](https://travis-ci.org/xunil154/gobar)
 
 Learning GO with shellz
 
