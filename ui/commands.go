@@ -10,8 +10,17 @@ import (
 
 func BootstrapCommands() {
 	RegisterCommand("help", "Display help information", "Show this message",
-		help, nil)
+		help, TabComplete)
 	RegisterFallbackCommand(execFallback)
+}
+
+func defaultHelp() string {
+	var help string = "Available commands:\n"
+	for cmd, command := range commands {
+		help += fmt.Sprintf("\t%v - %v\n", cmd, command.help)
+	}
+	help += "\texit - exit the application"
+	return help
 }
 
 func help(command string) (string, error) {
@@ -19,12 +28,10 @@ func help(command string) (string, error) {
 	if len(args) > 0 && !isValidCommand(args[0]) {
 		args := strings.Split(command, " ")
 		return "", errors.New(fmt.Sprintf("Command '%v' not found", args[0]))
+	} else if len(args) > 0 {
+		return commands[args[0]].help, nil
 	}
-	var help string = "Available commands:\n"
-	for cmd, _ := range commands {
-		help += fmt.Sprintf("\t%v\n", cmd)
-	}
-	return help, nil
+	return defaultHelp(), nil
 }
 
 func execFallback(command string) (string, error) {

@@ -3,6 +3,7 @@ package ui
 import (
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 )
@@ -70,7 +71,47 @@ func getCommandFromInput(input string) (command, error) {
 // Take current user input, and expand tabs
 // If a command is already in args[0], call that command's tabComplete
 func TabComplete(partial string, tabcount int) string {
-	// TODO: Implement this
+	matches := make([]string, 0, 20)
+	args := strings.Fields(partial)
+	//debug("Tab Args: %v", args)
+
+	// Case 1: Empty string, return all available commands
+	if len(partial) == 0 || len(args) == 0 {
+		for name, _ := range commands {
+			matches = append(matches, name)
+		}
+		sort.Strings(matches)
+		return strings.Join(matches, "\t")
+	}
+
+	if isValidCommand(args[0]) {
+		subcmd := ""
+		if len(args) > 0 {
+			subcmd = strings.Join(args[1:], " ")
+		}
+
+		completed := (commands[args[0]]).tabComplete(subcmd, tabcount)
+		// multiple are returned
+		if strings.Index(completed, "\t") != -1 {
+			return completed
+		} else { // Only one
+			return args[0] + " " + completed
+		}
+	}
+
+	for name, _ := range commands {
+		// If the partial is shorter than the command name and matches the
+		// beginning
+		if len(args[0]) < len(name) && args[0] == name[:len(args[0])] {
+			matches = append(matches, name)
+		}
+	}
+	if tabcount == 0 && len(matches) == 1 {
+		return matches[0]
+	} else if tabcount == 1 {
+		sort.Strings(matches)
+		return strings.Join(matches, "\t")
+	}
 	return partial
 }
 

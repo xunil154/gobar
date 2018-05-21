@@ -308,7 +308,16 @@ func (line *commandLine) handleSpecialInput(input byte, tabComplete func(string,
 			line.cursor -= 1 // Move cursor back one
 		}
 	case 0x09: // \t
-		line.input = tabComplete(line.input, line.tabCount)
+		completed := tabComplete(line.input, line.tabCount)
+
+		if len(completed) > 0 {
+			if strings.Index(completed, "\t") != -1 {
+				fmt.Printf("\n%v\n", completed)
+			} else {
+				line.input = completed
+				line.cursor = len(line.input)
+			}
+		}
 		line.tabCount = (line.tabCount + 1) % 2
 	case 0x0c: // Ctrl + l
 		clearScreen()
