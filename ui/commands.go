@@ -21,9 +21,10 @@ func help(command string) (string, error) {
 		return "", errors.New(fmt.Sprintf("Command '%v' not found", args[0]))
 	}
 	var help string = "Available commands:\n"
-	for cmd, _ := range commands {
-		help += fmt.Sprintf("\t%v\n", cmd)
+	for name, command := range commands {
+		help += fmt.Sprintf("\t%v - %v\n", name, command.description)
 	}
+	help += fmt.Sprintf("\texit - Exit the application\n")
 	return help, nil
 }
 
