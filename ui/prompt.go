@@ -402,9 +402,12 @@ func (hist *history) isFull() bool {
 func (hist *history) push(command string) int {
 	// If we reused a history item
 	if hist.index < len(hist.commandHistory) {
-		hist.reuse(hist.index)
-		hist.index = len(hist.commandHistory)
-		return hist.index
+		// If we did not edit this command, then swap it to the end
+		if hist.commandHistory[hist.index] == command {
+			hist.reuse(hist.index)
+			hist.index = len(hist.commandHistory)
+			return hist.index
+		}
 	}
 
 	if hist.isFull() {
@@ -439,14 +442,12 @@ func (hist *history) reuse(index int) int {
 Return the next history item
 */
 func (hist *history) next() (next string) {
-	if hist.index+1 < len(hist.commandHistory) {
-		hist.index += 1
-		if hist.index >= len(hist.commandHistory) {
-			hist.index = len(hist.commandHistory) // always point to one beyond
-			next = ""
-		} else {
-			next = hist.commandHistory[hist.index]
-		}
+	hist.index += 1
+
+	if hist.index < len(hist.commandHistory) {
+		next = hist.commandHistory[hist.index]
+	} else {
+		hist.index = len(hist.commandHistory) // always point to one beyond
 	}
 	return next
 }
