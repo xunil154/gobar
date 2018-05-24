@@ -1,8 +1,9 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-	"github.com/vharitonsky/iniflags"
+	"github.com/xunil154/gobar/core"
 	"github.com/xunil154/gobar/ui"
 	"log"
 	"os"
@@ -14,18 +15,21 @@ var (
 )
 
 func defaultPrompt() ui.PromptSegment {
-	return ui.NewPromptSegment("gobar", "black", "white")
+	return ui.PromptSegment{"gobar", "black", "green"}
 }
 
 func registerCommands() {
+	ui.BootstrapCommands()
+	core.BootstrapCommands()
 }
 
 func main() {
-	iniflags.Parse()
+	flag.Parse()
 	// Shared with commands
 	uiSegments = append(uiSegments, defaultPrompt())
 
-	ui.BootstrapCommands()
+	registerCommands()
+
 	for {
 		input := ui.GetUserInput(uiSegments, ui.TabComplete)
 		if input == "exit" || input == "quit" {
@@ -43,5 +47,3 @@ func main() {
 
 	ui.Exit()
 }
-
-////// COMMANDS \\\\\\\

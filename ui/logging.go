@@ -19,3 +19,13 @@ func debug(format string, args ...interface{}) {
 		fmt.Println(fmt.Sprintf(colorize("[D]", "green", "black")+format, args...))
 	}
 }
+
+func Debug(format string, args ...interface{}) {
+	debug(format, args...)
+}
+func Info(format string, args ...interface{}) {
+	info(format, args...)
+}
+func Warning(format string, args ...interface{}) {
+	warning(format, args...)
+}
