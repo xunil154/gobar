@@ -87,6 +87,9 @@ var (
 )
 
 // Exported Functions
+func NewPromptSegment(text, fgcolor, bgcolor string) PromptSegment {
+	return PromptSegment{text, fgcolor, bgcolor}
+}
 
 func DisplayPrompt(segments []PromptSegment) {
 	for i, segment := range segments {
@@ -205,10 +208,14 @@ func redrawLine(line commandLine, prompts []PromptSegment) {
 	drawLine(line, prompts)
 }
 
+func newLine() commandLine {
+	return commandLine{"", "", 0, 0}
+}
+
 // Input processing functions
 
 func getInput(prompts []PromptSegment, tabComplete func(string, int) string) string {
-	line := commandLine{"", "", 0, 0}
+	line := newLine()
 
 	for {
 		// read a single byte
