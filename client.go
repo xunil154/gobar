@@ -10,8 +10,7 @@ import (
 )
 
 var (
-	uiSegments = make([]ui.PromptSegment, 0, 10)
-	logger     = log.New(os.Stdout, "logger: ", log.Ltime)
+	logger = log.New(os.Stdout, "logger: ", log.Ltime)
 )
 
 func defaultPrompt() ui.PromptSegment {
@@ -23,13 +22,12 @@ func registerCommands() {
 
 func main() {
 	iniflags.Parse()
-	// Shared with commands
-	uiSegments = append(uiSegments, defaultPrompt())
 
 	ui.BootstrapCommands()
 	client.BootstrapCommands()
+	ui.AddSegment(defaultPrompt())
 	for {
-		input := ui.GetUserInput(uiSegments, ui.TabComplete)
+		input := ui.GetUserInput(ui.TabComplete)
 		if input == "exit" || input == "quit" {
 			break
 		}
@@ -37,9 +35,9 @@ func main() {
 		output, err := ui.ProcessInput(input)
 
 		if err != nil {
-			ui.Error(fmt.Sprintf("%v", err), uiSegments)
+			ui.Error(fmt.Sprintf("%v", err))
 		} else if len(output.Output) > 0 {
-			ui.Output(output.Output, uiSegments)
+			ui.Output(output.Output)
 		}
 	}
 

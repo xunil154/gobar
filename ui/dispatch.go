@@ -84,7 +84,7 @@ func TabComplete(partial string, tabcount int) string {
 		return strings.Join(matches, "\t")
 	}
 
-	if isValidCommand(args[0]) {
+	if isValidCommand(args[0]) && commands[args[0]].tabComplete != nil {
 		subcmd := ""
 		if len(args) > 0 {
 			subcmd = strings.Join(args[1:], " ")
@@ -113,6 +113,11 @@ func TabComplete(partial string, tabcount int) string {
 		return strings.Join(matches, "\t")
 	}
 	return partial
+}
+
+// Return an empty string all the time
+func EmptyTabComplete(partial string, tabcount int) string {
+	return ""
 }
 
 // Take a command, and call the appropriate command's callback

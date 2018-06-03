@@ -15,7 +15,7 @@ var (
 )
 
 func defaultPrompt() ui.PromptSegment {
-	return ui.PromptSegment{"gobar", "black", "green"}
+	return ui.PromptSegment{"core", "black", "green"}
 }
 
 func registerCommands() {
@@ -25,13 +25,10 @@ func registerCommands() {
 
 func main() {
 	flag.Parse()
-	// Shared with commands
-	uiSegments = append(uiSegments, defaultPrompt())
-
 	registerCommands()
-
+	ui.AddSegment(defaultPrompt())
 	for {
-		input := ui.GetUserInput(uiSegments, ui.TabComplete)
+		input := ui.GetUserInput(ui.TabComplete)
 		if input == "exit" || input == "quit" {
 			break
 		}
@@ -39,11 +36,12 @@ func main() {
 		output, err := ui.ProcessInput(input)
 
 		if err != nil {
-			ui.Error(fmt.Sprintf("%v", err), uiSegments)
+			ui.Error(fmt.Sprintf("%v", err))
 		} else if len(output.Output) > 0 {
-			ui.Output(output.Output, uiSegments)
+			ui.Output(output.Output)
 		}
 	}
 
+	core.Shutdown()
 	ui.Exit()
 }

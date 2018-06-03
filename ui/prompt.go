@@ -84,6 +84,8 @@ var (
 	override_colors = false
 	override_fg     = ""
 	override_bg     = ""
+
+	segments = make([]PromptSegment, 0)
 )
 
 // Exported Functions
@@ -99,14 +101,21 @@ func DisplayPrompt(segments []PromptSegment) {
 	fmt.Print(" ")
 }
 
-func GetUserInput(segments []PromptSegment, tabComplete func(string, int) string) string {
+func AddSegment(segment PromptSegment) {
+	segments = append(segments, segment)
+}
+func PopSegment() {
+	segments = segments[1:]
+}
+
+func GetUserInput(tabComplete func(string, int) string) string {
 	if !prepared {
 		prepareKeyboard()
 	}
 	DisplayPrompt(segments)
 	//reader := bufio.NewReader(os.Stdin)
 	//text, _ := reader.ReadString('\n')
-	text := getInput(segments, tabComplete)
+	text := getInput(tabComplete)
 	text = strings.TrimSpace(text)
 	return text
 }
@@ -116,19 +125,19 @@ func Exit() {
 	resetKeyboard()
 }
 
-func Error(message string, uiSegments []PromptSegment) {
+func Error(message string) {
 	override_colors = true
 	override_fg = "black"
 	override_bg = "red"
-	DisplayPrompt(uiSegments)
+	DisplayPrompt(segments)
 	override_colors = false
 
 	fmt.Println(message)
 }
 
-func Output(message string, uiSegments []PromptSegment) {
+func Output(message string) {
 	override_colors = false
-	DisplayPrompt(uiSegments)
+	DisplayPrompt(segments)
 	fmt.Println(message)
 }
 
@@ -214,7 +223,7 @@ func newLine() commandLine {
 
 // Input processing functions
 
-func getInput(prompts []PromptSegment, tabComplete func(string, int) string) string {
+func getInput(tabComplete func(string, int) string) string {
 	line := newLine()
 
 	for {
@@ -224,7 +233,7 @@ func getInput(prompts []PromptSegment, tabComplete func(string, int) string) str
 
 		// process the single byte
 		finished := line.handleInput(buf[0], tabComplete)
-		redrawLine(line, prompts)
+		redrawLine(line, segments)
 		if finished {
 			break
 		}
@@ -315,17 +324,19 @@ func (line *commandLine) handleSpecialInput(input byte, tabComplete func(string,
 			line.cursor -= 1 // Move cursor back one
 		}
 	case 0x09: // \t
-		completed := tabComplete(line.input, line.tabCount)
+		if tabComplete != nil {
+			completed := tabComplete(line.input, line.tabCount)
 
-		if len(completed) > 0 {
-			if strings.Index(completed, "\t") != -1 {
-				fmt.Printf("\n%v\n", completed)
-			} else {
-				line.input = completed
-				line.cursor = len(line.input)
+			if len(completed) > 0 {
+				if strings.Index(completed, "\t") != -1 {
+					fmt.Printf("\n%v\n", completed)
+				} else {
+					line.input = completed
+					line.cursor = len(line.input)
+				}
 			}
+			line.tabCount = (line.tabCount + 1) % 2
 		}
-		line.tabCount = (line.tabCount + 1) % 2
 	case 0x0c: // Ctrl + l
 		clearScreen()
 	case 0x12: // Ctrl + r
