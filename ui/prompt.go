@@ -53,7 +53,7 @@ const (
 	LEFT  = ESCSEQ + "\x44"
 	EOT   = "\x04"
 
-	PRINTABLE = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890~`!@#$%^&*()_-+='\"{}[]\\|:;<>,. "
+	PRINTABLE = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890~`!@#$%^&*()_-+='\"{}[]\\|:;<>,. /?"
 
 	historySize = 100
 )
@@ -65,17 +65,21 @@ var (
 	prompt_end = flag.String("prompt_end", "", "Prompt character")
 	prompt_mid = flag.String("prompt_mid", " ", "Prompt character")
 
-	yellow  = color.New(color.FgYellow).SprintFunc()
-	red     = color.New(color.FgRed).SprintFunc()
-	green   = color.New(color.FgGreen).SprintFunc()
-	blue    = color.New(color.FgBlue).SprintFunc()
-	black   = color.New(color.FgBlack).SprintFunc()
-	white   = color.New(color.FgWhite).SprintFunc()
-	bgred   = color.New(color.BgRed).SprintFunc()
-	bggreen = color.New(color.BgGreen).SprintFunc()
-	bgblue  = color.New(color.BgBlue).SprintFunc()
-	bgblack = color.New(color.BgBlack).SprintFunc()
-	bgwhite = color.New(color.BgWhite).SprintFunc()
+	yellow = color.New(color.FgYellow).SprintFunc()
+	red    = color.New(color.FgRed).SprintFunc()
+	green  = color.New(color.FgGreen).SprintFunc()
+	blue   = color.New(color.FgBlue).SprintFunc()
+	black  = color.New(color.FgBlack).SprintFunc()
+	white  = color.New(color.FgWhite).SprintFunc()
+
+	bgred     = color.New(color.BgRed).SprintFunc()
+	bggreen   = color.New(color.BgGreen).SprintFunc()
+	bgyellow  = color.New(color.BgYellow).SprintFunc()
+	bgblue    = color.New(color.BgBlue).SprintFunc()
+	bgmagenta = color.New(color.BgMagenta).SprintFunc()
+	bgcyan    = color.New(color.BgCyan).SprintFunc()
+	bgblack   = color.New(color.BgBlack).SprintFunc()
+	bgwhite   = color.New(color.BgWhite).SprintFunc()
 
 	prepared       = false
 	commandHistory = newHistory(historySize)
@@ -127,9 +131,12 @@ func Error(message string, uiSegments []PromptSegment) {
 }
 
 func Output(message string, uiSegments []PromptSegment) {
-	override_colors = false
+	override_fg = "white"
+	override_bg = "black"
+	override_colors = true
 	DisplayPrompt(uiSegments)
 	fmt.Println(message)
+	override_colors = false
 }
 
 // Color functions
@@ -164,6 +171,12 @@ func colorize(text string, fg string, bg string) string {
 		colorized = bgblack(colorized)
 	case "blue":
 		colorized = bgblue(colorized)
+	case "yellow":
+		colorized = bgyellow(colorized)
+	case "magenta":
+		colorized = bgmagenta(colorized)
+	case "cyan":
+		colorized = bgcyan(colorized)
 	}
 	return colorized
 }

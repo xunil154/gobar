@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/vharitonsky/iniflags"
 	"github.com/xunil154/gobar/ui"
 	"log"
 	"os"
@@ -21,7 +20,6 @@ func registerCommands() {
 }
 
 func main() {
-	iniflags.Parse()
 	// Shared with commands
 	uiSegments = append(uiSegments, defaultPrompt())
 

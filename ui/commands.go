@@ -12,6 +12,14 @@ import (
 func BootstrapCommands() {
 	RegisterCommand("help", "Display help information", "Show this message",
 		help, TabComplete)
+	RegisterCommand("?", "Display help information", "Show this message",
+		help, TabComplete)
+
+	RegisterCommand("set", "Set a global option", "<Option name s> <Value s>",
+		setOption, NilTabComplete)
+
+	RegisterCommand("showOptions", "Show all configured options", "",
+		showOptions, NilTabComplete)
 
 	RegisterCommand("chargen", "Generate characters to help with overflows",
 		"Generates a set of strings that could aid in developing exploits for"+

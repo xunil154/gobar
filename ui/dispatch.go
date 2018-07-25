@@ -38,7 +38,7 @@ var fallback func(string) (string, error)
 func RegisterCommand(name string, description string, help string,
 	callback func(string) (string, error), tabComplete func(string, int) string) {
 
-	debug("Registering command: %v: %v", name, description)
+	//debug("Registering command: %v: %v", name, description)
 	commands[name] = command{name, description, help, callback, tabComplete}
 }
 
@@ -113,6 +113,10 @@ func TabComplete(partial string, tabcount int) string {
 		return strings.Join(matches, "\t")
 	}
 	return partial
+}
+
+func NilTabComplete(partial string, tabcount int) string {
+	return ""
 }
 
 // Take a command, and call the appropriate command's callback
